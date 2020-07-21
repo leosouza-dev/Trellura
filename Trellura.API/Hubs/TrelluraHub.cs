@@ -32,6 +32,7 @@ namespace Trellura.API.Hubs
         {
             _totalDeClientes--;
             await Clients.All.SendAsync("atualizarTotalUsuarios", _totalDeClientes);
+            //todo - enviar saindo do grupo caso fechar pagina
             await base.OnDisconnectedAsync(exception);
         }
 
