@@ -39,14 +39,14 @@ namespace Trellura.API.Hubs
         {
             _totalDeClientesGrupo++;
             await Groups.AddToGroupAsync(Context.ConnectionId, nomeGrupo);
-            await Clients.Group(nomeGrupo).SendAsync("atualizarTotalUsuariosGrupo", usuario, _totalDeClientesGrupo);
+            await Clients.Group(nomeGrupo).SendAsync("entrandoNoGrupo", usuario, _totalDeClientesGrupo);
         }
 
         public async Task Sair(string usuario, string nomeGrupo)
         {
             _totalDeClientesGrupo++;
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, nomeGrupo);
-            await Clients.Group(nomeGrupo).SendAsync("atualizarTotalUsuariosGrupo", usuario, _totalDeClientesGrupo);
+            await Clients.Group(nomeGrupo).SendAsync("saindoDoGrupo", usuario, _totalDeClientesGrupo);
         }
 
         public async Task ObterTodosCards(string nomeGrupo)
