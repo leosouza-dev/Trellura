@@ -18,17 +18,43 @@ namespace Trellura.API.Hubs
             _context = context;
         }
 
-        public async Task Entrar(string usuario)
+        private static int _totalDeClientes;
+        private static int _totalDeClientesGrupo;
+
+        public async override Task OnConnectedAsync()
         {
-            await Clients.All.SendAsync("atualizarListaUsuario", usuario);
+            _totalDeClientes++;
+            await Clients.All.SendAsync("atualizarTotalUsuarios", _totalDeClientes);
+            await base.OnConnectedAsync();
         }
 
-        public async Task ObterTodosCards()
+        public async override Task OnDisconnectedAsync(Exception exception)
+        {
+            _totalDeClientes--;
+            await Clients.All.SendAsync("atualizarTotalUsuarios", _totalDeClientes);
+            await base.OnDisconnectedAsync(exception);
+        }
+
+        public async Task Entrar(string usuario, string nomeGrupo)
+        {
+            _totalDeClientesGrupo++;
+            await Groups.AddToGroupAsync(Context.ConnectionId, nomeGrupo);
+            await Clients.Group(nomeGrupo).SendAsync("atualizarTotalUsuariosGrupo", usuario, _totalDeClientesGrupo);
+        }
+
+        public async Task Sair(string usuario, string nomeGrupo)
+        {
+            _totalDeClientesGrupo++;
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, nomeGrupo);
+            await Clients.Group(nomeGrupo).SendAsync("atualizarTotalUsuariosGrupo", usuario, _totalDeClientesGrupo);
+        }
+
+        public async Task ObterTodosCards(string nomeGrupo)
         {
             try
             {
                 var cards = await _context.Cards.ToListAsync();
-                await Clients.All.SendAsync("receberTodosCards", cards);
+                await Clients.Group(nomeGrupo).SendAsync("receberTodosCards", cards);
             }
             catch (Exception)
             {
@@ -37,14 +63,14 @@ namespace Trellura.API.Hubs
         }
 
         // cria um card - será se vou precisar deserializar????
-        public async Task CriarCard(Card card)
+        public async Task CriarCard(Card card, string nomeGrupo)
         {
             try
             {
                 _context.Cards.Add(card);
                 await _context.SaveChangesAsync();
                 // recuperar cards e envia no sendAsync? ou no cliente chama chama novamente o ObterCards? ou manda só o novocard?
-                await Clients.All.SendAsync("atualizarBoard", card);
+                await Clients.Group(nomeGrupo).SendAsync("atualizarBoard", card);
             }
             catch (Exception)
             { 
@@ -53,13 +79,13 @@ namespace Trellura.API.Hubs
         }
 
         // update (recebe id + card?)
-        public async Task AtualizaCard(Card card)
+        public async Task AtualizaCard(Card card, string nomeGrupo)
         {
             try
             {
                 _context.Update(card);
                 await _context.SaveChangesAsync();
-                await Clients.All.SendAsync("atualizarBoard", card);
+                await Clients.Group(nomeGrupo).SendAsync("atualizarBoard", card);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -67,13 +93,13 @@ namespace Trellura.API.Hubs
             }
         }
 
-        public async Task ApagarCard(Card card)
+        public async Task ApagarCard(Card card, string nomeGrupo)
         {
             try
             {
                 _context.Remove(card);
                 await _context.SaveChangesAsync();
-                await Clients.All.SendAsync("atualizarBoard", card);
+                await Clients.Group(nomeGrupo).SendAsync("atualizarBoard", card);
             }
             catch (Exception)
             {
