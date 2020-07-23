@@ -28,7 +28,7 @@ namespace Trellura.API.Hubs
         {
             _totalDeClientes++;
             await Clients.All.SendAsync("atualizarTotalUsuarios", _totalDeClientes); // atualiza para todos
-            await Clients.AllExcept(Context.ConnectionId).SendAsync("usuarioEntrando", _totalDeClientes); // na home sobe um toast informando novo user para outros usuários
+            await Clients.AllExcept(Context.ConnectionId).SendAsync("usuarioEntrando"); // na home sobe um toast informando novo user para outros usuários
             await base.OnConnectedAsync();
         }
 
