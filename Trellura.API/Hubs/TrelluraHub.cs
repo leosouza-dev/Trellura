@@ -34,13 +34,15 @@ namespace Trellura.API.Hubs
 
         public async override Task OnDisconnectedAsync(Exception exception)
         {
+            // Não é necessário? - Testar
+
             // se usuario do grupo simplesmente sair
-            if(_usuarios.Contains(this.usuario))
-            {
-                await this.Sair(this.usuario, "nomeGrupo");
-                await base.OnDisconnectedAsync(exception);
-                return;
-            }
+            //if(_usuarios.Contains(this.usuario))
+            //{
+            //    await this.Sair(this.usuario, "nomeGrupo");
+            //    await base.OnDisconnectedAsync(exception);
+            //    return;
+            //}
 
             _totalDeClientes--;
             await Clients.All.SendAsync("atualizarTotalUsuarios", _totalDeClientes); // atualiza na home
@@ -85,45 +87,58 @@ namespace Trellura.API.Hubs
 
         public async Task CriarCard(Card card, string nomeGrupo)
         {
-            try
+            // comparado ao modelState
+            if(card.Title == null)
             {
-                _context.Cards.Add(card);
-                await _context.SaveChangesAsync();
-                await Clients.Caller.SendAsync("cardCriado", "Card criado com sucesso!"); // no formulário envia mensagem com sucesso
-                await Clients.GroupExcept(nomeGrupo, Context.ConnectionId).SendAsync("atualizarBoard", card); // para o resto atualiza o board
-            }
-            catch (Exception)
-            { 
-                await Clients.Caller.SendAsync("exibeMensagemErro", "Não foi possível criar o Card");
-            }
-        }
-
-        public async Task AtualizaCard(int cardId, Card card, string nomeGrupo)
-        {
-            if(cardId != card.Id)
-            {
-                await Clients.Caller.SendAsync("exibeMensagemErro", "Não foi possível atualizar o Card. Card e Id não coincidem");
+                await Clients.Caller.SendAsync("exibeMensagemErro", "Título é obirgatório!"); // no formulário envia mensagem com sucesso
                 return;
             }
-
-            try
+            else
             {
-                _context.Update(card);
-                await _context.SaveChangesAsync();
-                await Clients.Caller.SendAsync("cardAtualizado", "Card atualizado com sucesso!"); // no formulário envia mensagem com sucesso
-                await Clients.GroupExcept(nomeGrupo, Context.ConnectionId).SendAsync("atualizarBoard", card); // para o resto atualiza o board
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                await Clients.Caller.SendAsync("exibeMensagemErro", "Não foi possível atualizar o Card. Tente novamente mais tarde");
+                try
+                {
+                    _context.Cards.Add(card);
+                    await _context.SaveChangesAsync();
+                    await Clients.Caller.SendAsync("cardCriado", "Card criado com sucesso!"); // no formulário envia mensagem com sucesso
+                    await Clients.GroupExcept(nomeGrupo, Context.ConnectionId).SendAsync("atualizarBoard", card); // para o resto atualiza o board
+                }
+                catch (Exception)
+                { 
+                    await Clients.Caller.SendAsync("exibeMensagemErro", "Não foi possível criar o Card");
+                }
             }
         }
 
-        public async Task ApagarCard(int cardId, Card card, string nomeGrupo)
+        public async Task AtualizaCard(Card card, string nomeGrupo)
         {
-            if (cardId != card.Id)
+            if (!CardExiste(card.Id))
             {
-                await Clients.Caller.SendAsync("exibeMensagemErro", "Não foi possível deletar o Card. Card e Id fornecido não coincidem");
+                await Clients.Caller.SendAsync("exibeMensagemErro", "Card Não encontrado - checar Id"); // no formulário envia mensagem com sucesso
+                return;
+            }
+            else
+            {
+                try
+                {
+                    _context.Update(card);
+                    await _context.SaveChangesAsync();
+                    await Clients.Caller.SendAsync("cardAtualizado", "Card atualizado com sucesso!"); // no formulário envia mensagem com sucesso
+                    await Clients.GroupExcept(nomeGrupo, Context.ConnectionId).SendAsync("atualizarBoard", card); // para o resto atualiza o board
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    await Clients.Caller.SendAsync("exibeMensagemErro", "Não foi possível atualizar o Card. Tente novamente mais tarde");
+                }
+            }
+
+        }
+
+        public async Task ApagarCard(Card card, string nomeGrupo)
+        {
+            // TODO atulizar verificando se o id existe na lista (criar um método)
+            if (!CardExiste(card.Id))
+            {
+                await Clients.Caller.SendAsync("exibeMensagemErro", "Card Não encontrado - checar Id"); // no formulário envia mensagem com sucesso
                 return;
             }
 
@@ -137,6 +152,11 @@ namespace Trellura.API.Hubs
             {
                 await Clients.Caller.SendAsync("exibeMensagemErro", "Não foi possível apagar o Card. Tente novamente mais tarde");
             }
+        }
+
+        private bool CardExiste(int id)
+        {
+            return _context.Cards.Any(e => e.Id == id);
         }
     }
 }
