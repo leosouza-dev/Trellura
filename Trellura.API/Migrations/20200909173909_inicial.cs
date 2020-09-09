@@ -11,9 +11,10 @@ namespace Trellura.API.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                        .Annotation("Sqlite:Autoincrement", true),
                     Title = table.Column<string>(maxLength: 100, nullable: true),
-                    Autor = table.Column<string>(maxLength: 50, nullable: true)
+                    Autor = table.Column<string>(maxLength: 50, nullable: true),
+                    Status = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
                 {

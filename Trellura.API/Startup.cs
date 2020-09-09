@@ -29,7 +29,6 @@ namespace Trellura.API
                 options.AddPolicy("AllowAllCors", builder =>
                 {
                     builder
-
                     .WithOrigins("https://localhost:3000")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
@@ -43,8 +42,12 @@ namespace Trellura.API
             });
 
             services.AddDbContext<TrelluraDbContext>(options =>
-                options.UseSqlServer(
+                options.UseSqlite(
                     Configuration.GetConnectionString("DefaultConnection")));
+
+            //services.AddDbContext<TrelluraDbContext>(options =>
+            //    options.UseSqlServer(
+            //        Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddSignalR();
         }
